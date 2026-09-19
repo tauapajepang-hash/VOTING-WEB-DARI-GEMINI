@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ballon d'Or Live Voting</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        gold: {
+                            300: '#FDE047',
+                            400: '#FACC15',
+                            500: '#EAB308',
+                            600: '#CA8A04',
+                            700: '#A16207',
+                        },
+                        dark: {
+                            900: '#0B0D12',
+                            800: '#131722',
+                            700: '#1C2230',
+                            600: '#2A3347'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #080A0E;
+            color: #F3F4F6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF176 0%, #FFD54F 25%, #FFB300 50%, #FF8F00 75%, #FFC107 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-border-gradient {
+            border-image: linear-gradient(to bottom right, #FFE082, #FFB300, #B78103) 1;
+        }
+
+        .gold-card-glow {
+            box-shadow: 0 0 25px rgba(234, 179, 8, 0.15);
+        }
+
+        .rank-1-glow {
+            box-shadow: 0 0 35px rgba(250, 204, 21, 0.25);
+            border: 1px solid rgba(250, 204, 21, 0.5);
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, #FACC15 0%, #CA8A04 100%);
+            transition: all 0.3s ease;
+        }
+
+        .gold-btn:hover {
+            background: linear-gradient(135deg, #FDE047 0%, #EAB308 100%);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Card transition for live re-ordering */
+        .player-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A3347;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #CA8A04;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-gold-500 selection:text-black">
+
+    <!-- Header Navbar -->
+    <header class="sticky top-0 z-40 bg-dark-900/90 backdrop-blur-md border-b border-gold-500/20 px-4 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 via-gold-400 to-yellow-200 flex items-center justify-center shadow-lg shadow-gold-500/20">
+                    <i data-lucide="trophy" class="w-6 h-6 text-black fill-black"></i>
+                </div>
+                <div>
+                    <h1 class="font-cinzel text-xl lg:text-2xl font-bold tracking-wider gold-gradient-text">BALLON D'OR</h1>
+                    <p class="text-xs text-gray-400 tracking-widest uppercase">Global Live Voting 2026</p>
+                </div>
+            </div>
+
+            <!-- Total Global Votes Indicator -->
+            <div class="bg-dark-800/80 border border-gold-500/30 px-4 py-2 rounded-xl flex items-center space-x-3">
+                <div class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 block font-medium">Total Global Votes</span>
+                    <span id="totalGlobalVotes" class="text-lg font-extrabold text-gold-400">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8 w-full flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+        <!-- Left Column: Players Grid (3 cols on large) -->
+        <section class="lg:col-span-3 space-y-6">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-800/40 p-5 rounded-2xl border border-white/5">
+                <div>
+                    <h2 class="text-2xl font-bold font-cinzel text-white flex items-center gap-2">
+                        <i data-lucide="crown" class="text-gold-400 w-6 h-6"></i> Leaderboard Peringkat
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Pemain dengan suara terbanyak otomatis naik ke posisi teratas secara live.</p>
+                </div>
+                
+                <!-- Quick Search Input -->
+                <div class="relative min-w-[240px]">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="Cari pemain atau klub..." 
+                           class="w-full bg-dark-900 border border-gray-700/60 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-gold-500 transition-colors">
+                </div>
+            </div>
+
+            <!-- Dynamic Players List Container -->
+            <div id="playersContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                <!-- Player cards injected by JavaScript -->
+                <div class="col-span-full text-center py-12 text-gray-400">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gold-400 mb-3"></div>
+                    <p>Memuat daftar kandidat Ballon d'Or...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Live Feed & Info Sidebar -->
+        <aside class="space-y-6">
+            
+            <!-- Live Feed Activity -->
+            <div class="bg-dark-800/60 border border-gold-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+                    <h3 class="font-cinzel font-bold text-lg text-gold-400 flex items-center gap-2">
+                        <i data-lucide="activity" class="w-5 h-5 text-gold-400"></i> Live Feed Vote
+                    </h3>
+                    <span class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider animate-pulse">LIVE</span>
+                </div>
+                
+                <div id="liveFeedList" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 text-center py-6">Belum ada aktivitas vote terbaru...</p>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="bg-gradient-to-br from-dark-800 to-dark-900 border border-white/5 rounded-2xl p-5 space-y-3">
+                <h4 class="font-bold text-sm text-gray-200 flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-gold-400"></i> Cara Memilih:
+                </h4>
+                <ul class="text-xs text-gray-400 space-y-2 list-disc list-inside leading-relaxed">
+                    <li>Pilih pemain favoritmu dari daftar.</li>
+                    <li>Klik tombol <span class="text-gold-400 font-semibold">"Vote Pemain"</span>.</li>
+                    <li>Isi namamu di pop-up konfirmasi.</li>
+                    <li>Sistem akan langsung mencatat pilihanmu ke database global secara real-time.</li>
+                </ul>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Modal Vote Confirmation -->
+    <div id="voteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-dark-800 border border-gold-500/40 rounded-2xl p-6 lg:p-8 max-w-md w-full mx-4 shadow-2xl relative transform scale-95 transition-transform duration-300" id="modalContainer">
+            
+            <!-- Close Button -->
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Modal Body -->
+            <div class="text-center space-y-4">
+                <div class="w-16 h-16 bg-gold-500/10 rounded-full flex items-center justify-center mx-auto border border-gold-500/30">
+                    <i data-lucide="award" class="w-8 h-8 text-gold-400"></i>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-cinzel font-bold text-white">Konfirmasi Vote Anda</h3>
+                    <p class="text-xs text-gray-400 mt-1">Anda akan memilih pemain berikut untuk Ballon d'Or:</p>
+                </div>
+
+                <!-- Selected Player Details Preview -->
+                <div class="bg-dark-900 border border-gold-500/20 p-4 rounded-xl flex items-center gap-4 text-left">
+                    <img id="modalPlayerImg" src="" alt="Player" class="w-14 h-14 rounded-full object-cover border-2 border-gold-400">
+                    <div>
+                        <h4 id="modalPlayerName" class="font-bold text-white text-base">Nama Pemain</h4>
+                        <p id="modalPlayerClub" class="text-xs text-gold-400 font-medium">Klub / Negara</p>
+                    </div>
+                </div>
+
+                <!-- User Name Input Form -->
+                <div class="text-left space-y-2 pt-2">
+                    <label for="voterNameInput" class="text-xs font-semibold text-gray-300 block">Nama Lengkap Anda <span class="text-red-400">*</span></label>
+                    <input type="text" id="voterNameInput" placeholder="Masukkan nama Anda (misal: Andi Pratama)" 
+                           class="w-full bg-dark-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-gold-400 transition-colors">
+                    <p id="modalError" class="text-xs text-red-400 hidden">Silahkan masukkan nama Anda terlebih dahulu!</p>
+                </div>
+
+                <!-- Submit Action Button -->
+                <button id="confirmVoteBtn" class="w-full gold-btn text-black font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 mt-4 text-sm shadow-lg">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    Kirim Vote Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark-900 border-t border-white/5 py-6 px-4 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p>© 2026 Ballon d'Or Fan Live Voting Center. All rights reserved.</p>
+            <p class="flex items-center gap-1">Powered by <span class="text-gold-400 font-semibold">Firebase Real-time Firestore</span></p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc, 
+            increment, 
+            collection, 
+            onSnapshot, 
+            addDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initial Candidate Players Data
+        const INITIAL_PLAYERS = [
+            {
+                id: "vinicius_jr",
+                name: "Vinícius Júnior",
+                club: "Real Madrid",
+                country: "Brasil",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "kylian_mbappe",
+                name: "Kylian Mbappé",
+                club: "Real Madrid",
+                country: "Prancis",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "jude_bellingham",
+                name: "Jude Bellingham",
+                club: "Real Madrid",
+                country: "Inggris",
+                position: "Midfielder",
+                image: "https://images.unsplash.com/photo-1543351611-c823945f1007?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "rodri",
+                name: "Rodri",
+                club: "Manchester City",
+                country: "Spanyol",
+                position: "Midfielder",
+                image: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "lamine_yamal",
+                name: "Lamine Yamal",
+                club: "FC Barcelona",
+                country: "Spanyol",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "erling_haaland",
+                name: "Erling Haaland",
+                club: "Manchester City",
+                country: "Norwegia",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "harry_kane",
+                name: "Harry Kane",
+                club: "Bayern München",
+                country: "Inggris",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "lionel_messi",
+                name: "Lionel Messi",
+                club: "Inter Miami",
+                country: "Argentina",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1560272564-6694e341a090?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            },
+            {
+                id: "cristiano_ronaldo",
+                name: "Cristiano Ronaldo",
+                club: "Al-Nassr",
+                country: "Portugal",
+                position: "Forward",
+                image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=400&q=80",
+                votes: 0
+            }
+        ];
+
+        // Global Variables
+        let db, auth;
+        let selectedPlayer = null;
+        let globalPlayersData = {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ballondor-voting-app';
+
+        // Firebase Initialization function
+        async function setupFirebase() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' 
+                    ? JSON.parse(__firebase_config) 
+                    : { apiKey: "demo-api-key", authDomain: "demo.firebaseapp.com", projectId: "demo-project" };
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Initialize Database Default Data if not initialized
+                await seedInitialDataIfNeeded();
+
+                // Listen to Live Changes
+                listenToPlayersData();
+                listenToLiveFeed();
+
+            } catch (err) {
+                console.error("Firebase Auth/Firestore initialization failed:", err);
+            }
+        }
+
+        async function seedInitialDataIfNeeded() {
+            if (!auth.currentUser) return;
+
+            for (const player of INITIAL_PLAYERS) {
+                const playerDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', player.id);
+                const docSnap = await getDoc(playerDocRef);
+                
+                if (!docSnap.exists()) {
+                    await setDoc(playerDocRef, player);
+                }
+            }
+        }
+
+        function listenToPlayersData() {
+            if (!auth.currentUser) return;
+
+            const playersCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'players');
+
+            onSnapshot(playersCollRef, (snapshot) => {
+                let totalVotes = 0;
+                let playersList = [];
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    playersList.push({ id: docSnap.id, ...data });
+                    totalVotes += (data.votes || 0);
+                    globalPlayersData[docSnap.id] = data;
+                });
+
+                // Update Total Global Vote Counter UI
+                document.getElementById('totalGlobalVotes').innerText = totalVotes.toLocaleString('id-ID');
+
+                // Sort players by vote descending
+                playersList.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+                // Render dynamically
+                renderPlayersGrid(playersList);
+            }, (error) => {
+                console.error("Error listening to players:", error);
+            });
+        }
+
+        function listenToLiveFeed() {
+            if (!auth.currentUser) return;
+
+            const feedCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'votes_feed');
+
+            onSnapshot(feedCollRef, (snapshot) => {
+                let feeds = [];
+                snapshot.forEach(docSnap => {
+                    feeds.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Sort client-side by timestamp descending
+                feeds.sort((a, b) => {
+                    const tA = a.timestamp?.seconds || 0;
+                    const tB = b.timestamp?.seconds || 0;
+                    return tB - tA;
+                });
+
+                renderLiveFeed(feeds.slice(0, 15)); // Display last 15 votes
+            }, (error) => {
+                console.error("Error listening to live feed:", error);
+            });
+        }
+
+        function renderPlayersGrid(players) {
+            const container = document.getElementById('playersContainer');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            const filteredPlayers = players.filter(p => 
+                p.name.toLowerCase().includes(searchVal) || 
+                p.club.toLowerCase().includes(searchVal) || 
+                p.country.toLowerCase().includes(searchVal)
+            );
+
+            if (filteredPlayers.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-500">
+                        <i data-lucide="frown" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p>Tidak ada pemain yang sesuai pencarian.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredPlayers.map((player, index) => {
+                const rank = index + 1;
+                let rankBadgeHtml = '';
+
+                // Badge styling based on ranking
+                if (rank === 1) {
+                    rankBadgeHtml = `
+                        <div class="absolute -top-3 left-4 bg-gradient-to-r from-yellow-300 via-gold-400 to-yellow-600 text-black px-3 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-md">
+                            <i data-lucide="crown" class="w-3.5 h-3.5 fill-black"></i> #1 BALLON D'OR LEADER
+                        </div>
+                    `;
+                } else if (rank === 2) {
+                    rankBadgeHtml = `
+                        <div class="absolute -top-3 left-4 bg-slate-300 text-slate-900 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm">
+                            <i data-lucide="award" class="w-3.5 h-3.5"></i> #2 PERINGKAT 2
+                        </div>
+                    `;
+                } else if (rank === 3) {
+                    rankBadgeHtml = `
+                        <div class="absolute -top-3 left-4 bg-amber-700 text-amber-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm">
+                            <i data-lucide="award" class="w-3.5 h-3.5"></i> #3 PERINGKAT 3
+                        </div>
+                    `;
+                } else {
+                    rankBadgeHtml = `
+                        <div class="absolute -top-3 left-4 bg-dark-900 text-gray-400 border border-gray-700 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                            #${rank}
+                        </div>
+                    `;
+                }
+
+                const cardStyle = rank === 1 ? 'rank-1-glow bg-gradient-to-b from-dark-800 to-dark-900' : 'bg-dark-800/80 border border-white/5 hover:border-gold-500/40';
+
+                return `
+                    <div class="player-card ${cardStyle} rounded-2xl p-5 relative flex flex-col justify-between mt-2 group">
+                        ${rankBadgeHtml}
+
+                        <div class="pt-3">
+                            <div class="flex items-center space-x-4">
+                                <div class="relative">
+                                    <img src="${player.image}" alt="${player.name}" 
+                                         class="w-16 h-16 rounded-2xl object-cover border-2 ${rank === 1 ? 'border-gold-400' : 'border-gray-700'} shadow-md"
+                                         onerror="this.src='https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=400&q=80'">
+                                    <span class="absolute -bottom-1 -right-1 bg-dark-900 text-[10px] text-gold-400 border border-gold-500/30 px-1.5 py-0.5 rounded-md font-bold">
+                                        ${player.position}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-white group-hover:text-gold-400 transition-colors">${player.name}</h3>
+                                    <p class="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                        <span>${player.club}</span> • <span class="text-gray-500">${player.country}</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Vote Counter Badge -->
+                            <div class="mt-5 bg-dark-900/90 rounded-xl p-3 border border-white/5 flex items-center justify-between">
+                                <span class="text-xs text-gray-400">Total Suara:</span>
+                                <span class="text-lg font-black text-gold-400 font-mono tracking-tight">
+                                    ${(player.votes || 0).toLocaleString('id-ID')} <span class="text-xs font-sans text-gray-400 font-normal">Votes</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button onclick="openVoteModal('${player.id}')" 
+                                class="mt-4 w-full gold-btn text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md active:scale-95">
+                            <i data-lucide="vote" class="w-4 h-4"></i>
+                            Pilih / Vote ${player.name.split(' ')[0]}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderLiveFeed(feeds) {
+            const container = document.getElementById('liveFeedList');
+
+            if (!feeds || feeds.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">Belum ada aktivitas vote terbaru...</p>`;
+                return;
+            }
+
+            container.innerHTML = feeds.map(feed => {
+                return `
+                    <div class="bg-dark-900/60 border border-white/5 p-2.5 rounded-xl flex items-center justify-between text-xs animate-fade-in">
+                        <div class="flex items-center gap-2 truncate pr-2">
+                            <div class="w-7 h-7 rounded-full bg-gold-500/10 border border-gold-500/30 flex items-center justify-center shrink-0">
+                                <i data-lucide="user-check" class="w-3.5 h-3.5 text-gold-400"></i>
+                            </div>
+                            <div class="truncate">
+                                <span class="font-bold text-white">${escapeHtml(feed.voterName || 'Seseorang')}</span>
+                                <span class="text-gray-400"> memilih </span>
+                                <span class="font-semibold text-gold-400">${escapeHtml(feed.playerName || 'Pemain')}</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-gray-500 shrink-0">Baru saja</span>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        window.openVoteModal = function(playerId) {
+            selectedPlayer = globalPlayersData[playerId] || INITIAL_PLAYERS.find(p => p.id === playerId);
+            if (!selectedPlayer) return;
+
+            document.getElementById('modalPlayerImg').src = selectedPlayer.image;
+            document.getElementById('modalPlayerName').innerText = selectedPlayer.name;
+            document.getElementById('modalPlayerClub').innerText = `${selectedPlayer.club} (${selectedPlayer.country})`;
+            document.getElementById('voterNameInput').value = '';
+            document.getElementById('modalError').classList.add('hidden');
+
+            const modal = document.getElementById('voteModal');
+            const container = document.getElementById('modalContainer');
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+        };
+
+        function closeModal() {
+            const modal = document.getElementById('voteModal');
+            const container = document.getElementById('modalContainer');
+
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        async function submitVote() {
+            const nameInput = document.getElementById('voterNameInput').value.trim();
+            const errorElement = document.getElementById('modalError');
+
+            if (!nameInput) {
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            if (!selectedPlayer || !auth.currentUser) return;
+
+            const confirmBtn = document.getElementById('confirmVoteBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = `<div class="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full mx-auto"></div>`;
+
+            try {
+                // 1. Increment Vote Count in Firestore Player Document
+                const playerDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', selectedPlayer.id);
+                await updateDoc(playerDocRef, {
+                    votes: increment(1)
+                });
+
+                // 2. Add Activity Feed Entry
+                const feedCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'votes_feed');
+                await addDoc(feedCollRef, {
+                    voterName: nameInput,
+                    playerName: selectedPlayer.name,
+                    playerId: selectedPlayer.id,
+                    timestamp: serverTimestamp()
+                });
+
+                closeModal();
+            } catch (err) {
+                console.error("Error submitting vote:", err);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> Kirim Vote Sekarang`;
+                lucide.createIcons();
+            }
+        }
+
+        // Helper to sanitize inputs
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Event Listeners initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+
+            // Search Bar Filter
+            document.getElementById('searchInput').addEventListener('input', () => {
+                listenToPlayersData();
+            });
+
+            // Modal Action Listeners
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            document.getElementById('confirmVoteBtn').addEventListener('click', submitVote);
+
+            // Close modal on background click
+            document.getElementById('voteModal').addEventListener('click', (e) => {
+                if (e.target.id === 'voteModal') closeModal();
+            });
+        });
+    </script>
+</body>
+</html>
